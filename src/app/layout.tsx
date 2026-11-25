@@ -4,6 +4,8 @@ import "./globals.css";
 import { LanguageProvider } from "@/lib/language";
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
+import { ToastProvider } from "@/components/Toast";
+import GuidedTour from "@/components/GuidedTour";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -33,9 +35,12 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="flex min-h-full flex-col">
         <LanguageProvider>
-          <Nav />
-          <main className="flex-1">{children}</main>
-          <Footer />
+          <ToastProvider>
+            <Nav />
+            <main className="flex-1">{children}</main>
+            <Footer />
+            <GuidedTour />
+          </ToastProvider>
         </LanguageProvider>
       </body>
     </html>

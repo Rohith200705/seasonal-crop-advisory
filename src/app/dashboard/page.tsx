@@ -57,7 +57,7 @@ export default function DashboardPage() {
         </span>
       </div>
 
-      <div className="mt-6 grid gap-4 sm:grid-cols-3 lg:grid-cols-6">
+      <div data-tour="dash-stats" className="mt-6 grid gap-4 sm:grid-cols-3 lg:grid-cols-6">
         {[
           [String(stats.totals.queries), "advisory queries logged"],
           [String(stats.totals.feedback), "farmer feedback entries"],

@@ -23,32 +23,7 @@ function memoryState(): MemoryState {
     g.__scaMem = {
       crops: [...CROPS],
       logs: [],
-      feedback: [
-        {
-          name: "R. Karthik",
-          district: "Thanjavur",
-          crop: "rice",
-          rating: 5,
-          comment: "Advice matched our usual sowing window and the price note was accurate.",
-          createdAt: new Date(Date.now() - 86400000 * 2).toISOString(),
-        },
-        {
-          name: "Sunita Devi",
-          district: "Purnia",
-          crop: "lentil",
-          rating: 4,
-          comment: "Switched from wheat to lentil on a sandy plot — good return this rabi.",
-          createdAt: new Date(Date.now() - 86400000).toISOString(),
-        },
-        {
-          name: "Mahesh Patil",
-          district: "Solapur",
-          crop: "cotton",
-          rating: 3,
-          comment: "Risk warning about price volatility was useful, but I wanted a local mandi price.",
-          createdAt: new Date().toISOString(),
-        },
-      ],
+      feedback: [],
     };
   }
   return g.__scaMem;
@@ -71,29 +46,7 @@ async function seedMongo() {
   }
   const feedbackCount = await FeedbackModel.countDocuments();
   if (feedbackCount === 0) {
-    await FeedbackModel.insertMany([
-      {
-        name: "R. Karthik",
-        district: "Thanjavur",
-        crop: "rice",
-        rating: 5,
-        comment: "Advice matched our usual sowing window and the price note was accurate.",
-      },
-      {
-        name: "Sunita Devi",
-        district: "Purnia",
-        crop: "lentil",
-        rating: 4,
-        comment: "Switched from wheat to lentil on a sandy plot — good return this rabi.",
-      },
-      {
-        name: "Mahesh Patil",
-        district: "Solapur",
-        crop: "cotton",
-        rating: 3,
-        comment: "Risk warning about price volatility was useful, but I wanted a local mandi price.",
-      },
-    ]);
+    await FeedbackModel.insertMany([]);
   }
 }
 

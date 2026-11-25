@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useLang } from "@/lib/language";
+import { useToast } from "./Toast";
 
 export default function FeedbackForm({
   defaultCrop = "rice",
@@ -11,6 +12,7 @@ export default function FeedbackForm({
   onSubmit?: () => void;
 }) {
   const { t } = useLang();
+  const { toast } = useToast();
   const [name, setName] = useState("");
   const [district, setDistrict] = useState("");
   const [crop, setCrop] = useState(defaultCrop);
@@ -30,9 +32,12 @@ export default function FeedbackForm({
         body: JSON.stringify({ name, district, crop, rating, comment }),
       });
       if (!res.ok) throw new Error("Could not save feedback");
+      toast("Feedback saved — thank you for helping retrain the model.", "success");
       onSubmit?.();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error");
+      const msg = err instanceof Error ? err.message : "Error";
+      setError(msg);
+      toast(msg, "error");
     } finally {
       setBusy(false);
     }

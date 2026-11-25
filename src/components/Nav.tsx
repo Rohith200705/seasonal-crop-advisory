@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { useLang } from "@/lib/language";
 import { LANGS, type Lang } from "@/lib/i18n";
+import { useToast } from "./Toast";
 
 const links = [
   { href: "/", key: "nav_home" },
@@ -15,10 +16,13 @@ const links = [
   { href: "/about", key: "nav_about" },
 ];
 
+const LANG_LABELS: Record<string, string> = { en: "English", hi: "हिन्दी", ta: "தமிழ்" };
+
 export default function Nav() {
   const { t, lang, setLang } = useLang();
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const { toast } = useToast();
 
   return (
     <header className="sticky top-0 z-40 border-b border-brand-100 bg-cream/90 backdrop-blur">
@@ -58,12 +62,17 @@ export default function Nav() {
         </nav>
 
         <div className="flex items-center gap-2">
-          <div className="flex overflow-hidden rounded-lg border border-brand-200 bg-white">
+          <div data-tour="lang-switch" className="flex overflow-hidden rounded-lg border border-brand-200 bg-white">
             {LANGS.map((l) => (
               <button
                 key={l.code}
                 type="button"
-                onClick={() => setLang(l.code as Lang)}
+                onClick={() => {
+                  setLang(l.code as Lang);
+                  if (l.code !== lang) {
+                    toast(`Language switched to ${LANG_LABELS[l.code] ?? l.code}`, "info");
+                  }
+                }}
                 className={`px-2.5 py-1.5 text-xs font-bold transition ${
                   lang === l.code ? "bg-brand-600 text-white" : "text-brand-700 hover:bg-brand-50"
                 }`}

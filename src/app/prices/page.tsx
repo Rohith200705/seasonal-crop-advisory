@@ -113,7 +113,7 @@ export default function PricesPage() {
               </div>
 
               <div className="mt-5 grid gap-5 lg:grid-cols-[2fr_1fr]">
-                <div className="card p-5">
+                <div className="card p-5" data-tour="price-chart">
                   <p className="mb-3 text-sm font-bold text-brand-800">
                     Daily mandi price — {cropLabel(lang, active)}
                   </p>

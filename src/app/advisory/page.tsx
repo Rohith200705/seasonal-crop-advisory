@@ -5,6 +5,7 @@ import { useLang, cropLabel } from "@/lib/language";
 import { ScoreBarChart } from "@/components/charts/Charts";
 import type { AdvisoryResult, Season } from "@/lib/types";
 import FeedbackForm from "@/components/FeedbackForm";
+import { useToast } from "@/components/Toast";
 
 type Mode = "mongodb" | "memory";
 
@@ -27,6 +28,7 @@ const defaultForm = {
 
 export default function AdvisoryPage() {
   const { t, lang } = useLang();
+  const { toast } = useToast();
   const [form, setForm] = useState(defaultForm);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -64,9 +66,21 @@ export default function AdvisoryPage() {
       setResult(data);
       setExpanded(data.recommendations?.[0]?.slug ?? null);
       setFbDone(false);
+      const top = data.recommendations?.[0];
+      if (top) {
+        toast(
+          `Advisory ready — top pick: ${cropLabel(lang, top)} (score ${top.score})`,
+          "success"
+        );
+      }
+      if (data.mode === "memory") {
+        toast("MongoDB not reachable — running on the in-memory demo store.", "info");
+      }
       document.getElementById("results")?.scrollIntoView({ behavior: "smooth", block: "start" });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
+      const msg = err instanceof Error ? err.message : "Something went wrong";
+      setError(msg);
+      toast(msg, "error");
     } finally {
       setLoading(false);
     }
@@ -85,6 +99,7 @@ export default function AdvisoryPage() {
     ];
     navigator.clipboard.writeText(lines.join("\n")).then(() => {
       setCopied(true);
+      toast("Top-3 advisory summary copied to clipboard.", "success");
       setTimeout(() => setCopied(false), 2000);
     });
   }
@@ -118,7 +133,7 @@ export default function AdvisoryPage() {
       <div className="mt-6 grid gap-6 lg:grid-cols-[380px_1fr]">
         {/* Form */}
         <form onSubmit={submit} className="card h-fit p-5 lg:sticky lg:top-20">
-          <div>
+          <div data-tour="season-picker">
             <span className="label-cap">{t("form_season")}</span>
             <div className="grid grid-cols-3 gap-2">
               {(["kharif", "rabi", "zaid"] as Season[]).map((s) => (
@@ -181,7 +196,7 @@ export default function AdvisoryPage() {
           <p className="mt-5 border-t border-brand-100 pt-4 text-xs font-bold uppercase tracking-wider text-brand-600">
             {t("form_soil")}
           </p>
-          <div className="mt-2 grid grid-cols-2 gap-3">
+          <div className="mt-2 grid grid-cols-2 gap-3" data-tour="soil-fields">
             <div>
               <label className="label-cap" htmlFor="n">
                 {t("form_n")}
@@ -236,7 +251,7 @@ export default function AdvisoryPage() {
           <p className="mt-5 border-t border-brand-100 pt-4 text-xs font-bold uppercase tracking-wider text-brand-600">
             {t("form_climate")}
           </p>
-          <div className="mt-2 grid grid-cols-3 gap-3">
+          <div className="mt-2 grid grid-cols-3 gap-3" data-tour="weather-fields">
             <div>
               <label className="label-cap" htmlFor="temp">
                 {t("form_temp")}
@@ -295,8 +310,20 @@ export default function AdvisoryPage() {
             </p>
           )}
 
-          <button type="submit" disabled={loading} className="btn-primary mt-5 w-full">
-            {loading ? t("form_loading") : t("form_submit")}
+          <button
+            type="submit"
+            disabled={loading}
+            data-tour="submit-btn"
+            className="btn-primary mt-5 w-full"
+          >
+            {loading ? (
+              <span className="flex items-center gap-2">
+                <span className="animate-seed-spin inline-block h-4 w-4 rounded-full border-2 border-white/40 border-t-white" />
+                {t("form_loading")}
+              </span>
+            ) : (
+              t("form_submit")
+            )}
           </button>
           <button
             type="button"
@@ -308,7 +335,7 @@ export default function AdvisoryPage() {
         </form>
 
         {/* Results */}
-        <div id="results" className="space-y-5">
+        <div id="results" data-tour="results" className="space-y-5">
           {!result && !loading && (
             <div className="card flex min-h-72 flex-col items-center justify-center p-8 text-center">
               <span className="text-4xl">🌱</span>
@@ -470,7 +497,7 @@ export default function AdvisoryPage() {
                 })}
               </div>
 
-              <div className="card p-5">
+              <div className="card p-5" data-tour="feedback">
                 {fbDone ? (
                   <p className="text-sm font-semibold text-brand-700">{t("fb_thanks")}</p>
                 ) : (
