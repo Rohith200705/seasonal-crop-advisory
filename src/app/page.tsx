@@ -19,58 +19,70 @@ const FieldScene = dynamic(() => import("@/components/hero/FieldScene"), {
 type Stats = {
   modelAccuracy: { model: string; accuracy: number }[];
   rainfallByCrop: { crop: string; rainfall: number }[];
+  bestModel?: string;
+  bestAccuracy?: number;
+  macroF1?: number;
+  dataset?: { rows: number; classes: string[] };
+  zonesMeta?: { k: number; silhouette: number };
 };
 
 const objectives = [
   {
-    icon: "🔗",
-    title: "Integrate the data",
-    body: "Fuse soil, weather, water, yield and market price into one clean dataset.",
+    icon: "🧠",
+    title: "Train, don't hardcode",
+    body: "Random Forest fitted offline on 2,200 labelled soil–climate rows; JSON export inferred in the API.",
   },
   {
     icon: "🌾",
-    title: "Recommend the right crop",
-    body: "Rank season-fit crops by expected yield and net profit — not yield alone.",
+    title: "Rank by profit",
+    body: "Expected yield × baseline price − input cost, not yield alone.",
   },
   {
     icon: "⚠️",
     title: "Score the risk",
-    body: "A Season Risk Index from rainfall anomaly, heat extremes and price volatility.",
+    body: "Season Risk Index from climate distance, static market CV, and model uncertainty.",
   },
   {
     icon: "📍",
     title: "Localise & explain",
-    body: "Agro-climatic clustering for local advice, with a reason for every pick.",
+    body: "K-Means k=5 zones plus a reason per pick from class-mean distance.",
   },
   {
     icon: "🗣️",
     title: "Make it accessible",
-    body: "Local languages, low-connectivity friendly, SMS-ready summaries.",
+    body: "Local languages and a low-connectivity friendly UI.",
   },
   {
     icon: "🔁",
     title: "Validate & learn",
-    body: "Prove it with ML metrics and improve via a farmer-feedback loop.",
+    body: "Held-out metrics in metrics.json; farmer feedback stored for a future retrain loop.",
   },
 ];
 
 const pipeline = [
-  ["Collect", "fuse 5+ open sources"],
-  ["Preprocess", "clean → engineer → split"],
-  ["Explore", "EDA + statistical tests"],
-  ["Train", "Random Forest / XGBoost"],
-  ["Score", "yield × price − cost"],
-  ["Explain", "SHAP reason per crop"],
-  ["Deliver", "multilingual app / SMS"],
-  ["Learn", "feedback retrains model"],
+  ["Collect", "Crop_recommendation.csv — 2,200 labelled rows"],
+  ["Preprocess", "impute → IQR → engineer → scale → 80/20"],
+  ["Explore", "EDA + K-Means k=5 zones on real features"],
+  ["Train", "6 classifiers, seed 42, held-out metrics"],
+  ["Score", "yield × baseline price − cost"],
+  ["Explain", "class-mean distance + model probability"],
+  ["Deliver", "Next.js API + multilingual UI"],
+  ["Learn", "feedback stored in Mongo (retrain pending)"],
 ];
 
 const datasetSources = [
-  ["Crop Recommendation — Kaggle", "N, P, K, temperature, humidity, pH, rainfall → crop · 2,200 rows · 22 crops"],
-  ["NASA POWER / IMD Agromet", "historical + forecast temperature, humidity & rainfall"],
-  ["data.gov.in", "district-wise crop production & yield statistics"],
-  ["Agmarknet (DMI)", "daily mandi (market) prices per commodity"],
-  ["ISRIC SoilGrids / Soil Health Card", "soil nutrients, texture & pH by region"],
+  [
+    "Crop Recommendation — Kaggle (in repo)",
+    "N, P, K, temperature, humidity, pH, rainfall → 22 crops · 2,200 rows · scripts/train.py",
+  ],
+  [
+    "Engineered features (13)",
+    "NPK ratios, N/K share, rain per degree, humid-rain, |pH−7|",
+  ],
+  [
+    "Exported artifacts",
+    "model.json (200-tree RF) · scaler.json · metrics.json · zones.json",
+  ],
 ];
 
 const gaps = [
@@ -88,7 +100,15 @@ export default function HomePage() {
     fetch("/api/stats")
       .then((r) => r.json())
       .then((d) =>
-        setStats({ modelAccuracy: d.modelAccuracy, rainfallByCrop: d.rainfallByCrop })
+        setStats({
+          modelAccuracy: d.modelAccuracy,
+          rainfallByCrop: d.rainfallByCrop,
+          bestModel: d.bestModel,
+          bestAccuracy: d.bestAccuracy,
+          macroF1: d.macroF1,
+          dataset: d.dataset,
+          zonesMeta: d.zonesMeta,
+        })
       )
       .catch(() => setStats(null));
   }, []);
@@ -246,7 +266,7 @@ export default function HomePage() {
             {[
               ["2,200", "labelled soil–climate records"],
               ["22", "candidate crop classes"],
-              ["7 → 15", "raw vs engineered features"],
+              ["7 → 13", "raw vs engineered features"],
             ].map(([b, s], i) => (
               <Reveal key={b} delay={i * 100}>
                 <div className="card p-5 text-center lift">
@@ -297,12 +317,21 @@ export default function HomePage() {
         </Reveal>
         <div className="mt-6 grid gap-5 sm:grid-cols-4">
           {[
-            ["99.6%", "best accuracy (XGBoost)"],
-            ["0.99", "macro F1-score"],
-            ["6", "ML models benchmarked"],
-            ["k = 5", "agro-climatic zones"],
+            [
+              stats?.bestAccuracy != null ? `${stats.bestAccuracy}%` : "—",
+              `best held-out accuracy (${stats?.bestModel ?? "…"})`,
+            ],
+            [stats?.macroF1 != null ? stats.macroF1.toFixed(3) : "—", "macro F1 (exported RF)"],
+            [
+              stats?.modelAccuracy ? String(stats.modelAccuracy.length) : "—",
+              "ML models benchmarked",
+            ],
+            [
+              stats?.zonesMeta ? `k = ${stats.zonesMeta.k}` : "—",
+              "agro-climatic zones (K-Means)",
+            ],
           ].map(([b, s], i) => (
-            <Reveal key={b} delay={i * 90}>
+            <Reveal key={s} delay={i * 90}>
               <div className="card p-5 text-center lift">
                 <p className="text-2xl font-extrabold text-brand-600">{b}</p>
                 <p className="mt-1 text-xs text-ink/60">{s}</p>
@@ -314,7 +343,7 @@ export default function HomePage() {
           <Reveal>
             <div className="card h-full p-5">
               <p className="mb-3 text-sm font-bold text-brand-800">
-                Crop-recommendation accuracy by model (%)
+                Held-out accuracy by model (%)
               </p>
               {stats ? (
                 <AccuracyChart data={stats.modelAccuracy} />
@@ -322,14 +351,15 @@ export default function HomePage() {
                 <p className="py-24 text-center text-sm text-ink/50">{t("loading")}</p>
               )}
               <p className="mt-2 text-[11px] text-ink/45">
-                Source: Comparative study, Atlantis Press (2024), same 22-crop dataset
+                Measured on this repo&apos;s 20% test split via scripts/train.py — not a citation
+                from a paper.
               </p>
             </div>
           </Reveal>
           <Reveal delay={120}>
             <div className="card h-full p-5">
               <p className="mb-3 text-sm font-bold text-brand-800">
-                Average rainfall required, by crop (mm)
+                Average rainfall by crop in the dataset (mm)
               </p>
               {stats ? (
                 <RainfallChart data={stats.rainfallByCrop} />
@@ -337,7 +367,7 @@ export default function HomePage() {
                 <p className="py-24 text-center text-sm text-ink/50">{t("loading")}</p>
               )}
               <p className="mt-2 text-[11px] text-ink/45">
-                Source: Kaggle Crop Recommendation dataset (2,200 samples)
+                Computed from Crop_recommendation.csv (2,200 samples).
               </p>
             </div>
           </Reveal>
@@ -345,9 +375,10 @@ export default function HomePage() {
         <Reveal>
           <div className="card mt-6 border-l-4 border-l-brand-500 p-5">
             <p className="text-sm leading-relaxed text-ink/75">
-              <b className="text-brand-800">Insight —</b> adding market price re-ranks the top crop
-              in many districts vs a yield-only model — the profit layer, not accuracy, is the
-              differentiator.
+              <b className="text-brand-800">How a pick is scored —</b> model probability for the
+              crop under your soil/climate, times expected yield × baseline price − cost,
+              re-weighted by Season Risk Index (climate distance from the crop&apos;s learned
+              profile + static market CV + model uncertainty).
             </p>
           </div>
         </Reveal>

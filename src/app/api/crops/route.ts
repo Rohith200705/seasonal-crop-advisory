@@ -1,39 +1,32 @@
 import { connection } from "next/server";
-import { getCrops, getMode, getPriceStatsSnapshot } from "@/lib/db";
-import { priceStats } from "@/lib/data/prices";
+import { getCrops, getMode } from "@/lib/db";
 
 export async function GET() {
   await connection();
-  const [mode, crops, agg] = await Promise.all([getMode(), getCrops(), getPriceStatsSnapshot()]);
+  const [mode, crops] = await Promise.all([getMode(), getCrops()]);
 
-  const bySlug = new Map((agg ?? []).map((s) => [s.slug, s]));
+  const items = crops.map((c) => ({
+    slug: c.slug,
+    name: c.name,
+    hindiName: c.hindiName,
+    tamilName: c.tamilName,
+    category: c.category,
+    seasons: c.seasons,
+    color: c.color,
+    waterNeed: c.waterNeed,
+    description: c.description,
+    yieldPerHa: c.yieldPerHa,
+    inputCostPerHa: c.inputCostPerHa,
+    rainfall: c.rainfall,
+    temperature: c.temperature,
+    ph: c.ph,
+    price: c.pricePerQtl,
+    priceMean: c.pricePerQtl,
+    priceMin: c.pricePerQtl,
+    priceMax: c.pricePerQtl,
+    volatility: c.volatility,
+    trendPct: 0,
+  }));
 
-  const items = crops.map((c) => {
-    const stats = priceStats(c);
-    const a = bySlug.get(c.slug);
-    return {
-      slug: c.slug,
-      name: c.name,
-      hindiName: c.hindiName,
-      tamilName: c.tamilName,
-      category: c.category,
-      seasons: c.seasons,
-      color: c.color,
-      waterNeed: c.waterNeed,
-      description: c.description,
-      yieldPerHa: c.yieldPerHa,
-      inputCostPerHa: c.inputCostPerHa,
-      rainfall: c.rainfall,
-      temperature: c.temperature,
-      ph: c.ph,
-      price: a?.current ?? stats.current,
-      priceMean: a?.mean ?? stats.mean,
-      priceMin: a?.min ?? stats.min,
-      priceMax: a?.max ?? stats.max,
-      volatility: a?.volatility ?? stats.volatility,
-      trendPct: a?.trendPct ?? stats.trendPct,
-    };
-  });
-
-  return Response.json({ mode, crops: items });
+  return Response.json({ mode, crops: items, note: "Baseline reference prices." });
 }

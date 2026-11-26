@@ -9,6 +9,12 @@ type Stats = {
   mode: "mongodb" | "memory";
   modelAccuracy: { model: string; accuracy: number }[];
   rainfallByCrop: { crop: string; rainfall: number }[];
+  featureImportance?: { feature: string; importance: number }[];
+  bestModel?: string;
+  bestAccuracy?: number;
+  exportedModel?: string;
+  exportedAccuracy?: number;
+  macroF1?: number;
   totals: { queries: number; feedback: number; avgRating: number; crops: number; zones: number; models: number };
   zoneCounts: { zone: string; count: number }[];
   topCrops: { slug: string; count: number }[];
@@ -76,23 +82,43 @@ export default function DashboardPage() {
       <div className="mt-5 grid gap-5 lg:grid-cols-2">
         <div className="card p-5">
           <p className="mb-3 text-sm font-bold text-brand-800">
-            Crop-recommendation accuracy by model (%)
+            Held-out accuracy by model (%)
           </p>
           <AccuracyChart data={stats.modelAccuracy} />
           <p className="mt-2 text-[11px] text-ink/45">
-            Atlantis Press (2024) comparative study on the same 22-crop dataset
+            Measured by scripts/train.py on this dataset — best {stats.bestModel}{" "}
+            {stats.bestAccuracy}%; serving {stats.exportedModel} {stats.exportedAccuracy}%
           </p>
         </div>
         <div className="card p-5">
           <p className="mb-3 text-sm font-bold text-brand-800">
-            Average rainfall required, by crop (mm)
+            Average rainfall by crop in dataset (mm)
           </p>
           <RainfallChart data={stats.rainfallByCrop} />
           <p className="mt-2 text-[11px] text-ink/45">
-            Kaggle Crop Recommendation dataset — rainfall &amp; humidity are the strongest separators
+            Crop_recommendation.csv — rainfall &amp; humidity are the strongest separators
           </p>
         </div>
       </div>
+
+      {stats.featureImportance && stats.featureImportance.length > 0 && (
+        <div className="card mt-5 p-5">
+          <p className="mb-3 text-sm font-bold text-brand-800">
+            Feature importance (permutation drop in accuracy)
+          </p>
+          <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {stats.featureImportance.slice(0, 9).map((f) => (
+              <li
+                key={f.feature}
+                className="flex items-center justify-between rounded-lg bg-brand-50 px-3 py-2 text-sm"
+              >
+                <span className="font-semibold text-brand-800">{f.feature}</span>
+                <span className="text-ink/60">{(f.importance * 100).toFixed(2)} pp</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <div className="mt-5 grid gap-5 lg:grid-cols-2">
         <div className="card p-5">

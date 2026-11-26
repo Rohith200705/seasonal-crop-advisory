@@ -33,12 +33,6 @@ const CropSchema = new Schema(
   { timestamps: true }
 );
 
-const PriceSchema = new Schema({
-  cropSlug: { type: String, required: true, index: true },
-  date: { type: String, required: true },
-  price: Number,
-});
-
 const AdvisoryLogSchema = new Schema(
   {
     input: { type: Schema.Types.Mixed, required: true },
@@ -61,6 +55,5 @@ const FeedbackSchema = new Schema(
 );
 
 export const CropModel = models.Crop || model("Crop", CropSchema);
-export const PriceModel = models.Price || model("Price", PriceSchema);
 export const AdvisoryLogModel = models.AdvisoryLog || model("AdvisoryLog", AdvisoryLogSchema);
 export const FeedbackModel = models.Feedback || model("Feedback", FeedbackSchema);

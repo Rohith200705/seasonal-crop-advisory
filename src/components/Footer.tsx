@@ -25,7 +25,7 @@ export default function Footer() {
             </li>
             <li>
               <Link href="/prices" className="hover:text-white">
-                Mandi Prices
+                Baseline Prices
               </Link>
             </li>
             <li>
@@ -47,8 +47,8 @@ export default function Footer() {
         </div>
       </div>
       <div className="border-t border-brand-800 px-4 py-4 text-center text-xs text-brand-300">
-        Built with Next.js · MongoDB · Node.js — data from Kaggle, NASA POWER, IMD Agromet,
-        Agmarknet, data.gov.in &amp; ISRIC SoilGrids.
+        Built with Next.js · MongoDB · Python (scikit-learn / XGBoost) — trained on the Kaggle Crop
+        Recommendation dataset (2,200 rows, 22 crops).
       </div>
     </footer>
   );

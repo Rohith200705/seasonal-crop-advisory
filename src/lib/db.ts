@@ -1,7 +1,6 @@
 import mongoose from "mongoose";
 import { CROPS } from "./data/crops";
-import { priceSeries } from "./data/prices";
-import { AdvisoryLogModel, CropModel, FeedbackModel, PriceModel } from "./models";
+import { AdvisoryLogModel, CropModel, FeedbackModel } from "./models";
 import type { AdvisoryLogDoc, Crop, FeedbackDoc } from "./types";
 
 export type StoreMode = "mongodb" | "memory";
@@ -33,16 +32,6 @@ async function seedMongo() {
   const cropCount = await CropModel.countDocuments();
   if (cropCount === 0) {
     await CropModel.insertMany(CROPS);
-  }
-  const priceCount = await PriceModel.countDocuments();
-  if (priceCount === 0) {
-    const docs: { cropSlug: string; date: string; price: number }[] = [];
-    for (const crop of CROPS) {
-      for (const pt of priceSeries(crop)) {
-        docs.push({ cropSlug: crop.slug, date: pt.date, price: pt.price });
-      }
-    }
-    await PriceModel.insertMany(docs);
   }
   const feedbackCount = await FeedbackModel.countDocuments();
   if (feedbackCount === 0) {
@@ -148,48 +137,4 @@ export async function getFeedback(): Promise<FeedbackDoc[]> {
     }));
   }
   return memoryState().feedback;
-}
-
-export async function getPriceStatsSnapshot() {
-  const mode = await getMode();
-  if (mode === "mongodb") {
-    const perCrop = await PriceModel.aggregate([
-      {
-        $group: {
-          _id: "$cropSlug",
-          current: { $last: "$price" },
-          first: { $first: "$price" },
-          min: { $min: "$price" },
-          max: { $max: "$price" },
-          mean: { $avg: "$price" },
-          std: { $stdDevPop: "$price" },
-          count: { $sum: 1 },
-        },
-      },
-    ]);
-    return perCrop.map(
-      (r: {
-        _id: string;
-        current: number;
-        first: number;
-        min: number;
-        max: number;
-        mean: number;
-        std: number;
-        count: number;
-      }) => ({
-        slug: r._id,
-        current: r.current,
-        first: r.first,
-        min: r.min,
-        max: r.max,
-        mean: Math.round(r.mean),
-        volatility: r.mean ? Math.round((r.std / r.mean) * 1000) / 1000 : 0,
-        trendPct:
-          r.first > 0 ? Math.round(((r.current - r.first) / r.first) * 1000) / 10 : 0,
-        count: r.count,
-      })
-    );
-  }
-  return null;
 }

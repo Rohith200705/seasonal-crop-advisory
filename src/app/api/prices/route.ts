@@ -1,6 +1,9 @@
 import { CROPS } from "@/lib/data/crops";
-import { priceSeries, priceStats } from "@/lib/data/prices";
 
+/**
+ * Static baseline reference prices from crop profiles.
+ * No synthetic series — live Agmarknet/DMI integration is future work.
+ */
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const slug = searchParams.get("crop");
@@ -8,38 +11,43 @@ export async function GET(request: Request) {
   if (slug) {
     const crop = CROPS.find((c) => c.slug === slug);
     if (!crop) return Response.json({ error: "Unknown crop" }, { status: 404 });
-    const stats = priceStats(crop);
     return Response.json({
-      crop: { slug: crop.slug, name: crop.name, color: crop.color, base: crop.pricePerQtl },
-      stats: {
-        mean: stats.mean,
-        min: stats.min,
-        max: stats.max,
-        current: stats.current,
-        volatility: Math.round(stats.volatility * 1000) / 1000,
-        trendPct: stats.trendPct,
+      crop: {
+        slug: crop.slug,
+        name: crop.name,
+        color: crop.color,
+        base: crop.pricePerQtl,
       },
-      series: stats.series,
+      stats: {
+        mean: crop.pricePerQtl,
+        min: crop.pricePerQtl,
+        max: crop.pricePerQtl,
+        current: crop.pricePerQtl,
+        volatility: crop.volatility,
+        trendPct: 0,
+      },
+      series: [],
+      note: "Static baseline reference price — not a live mandi quote.",
     });
   }
 
-  const all = CROPS.map((c) => {
-    const s = priceStats(c);
-    return {
-      slug: c.slug,
-      name: c.name,
-      hindiName: c.hindiName,
-      tamilName: c.tamilName,
-      color: c.color,
-      current: s.current,
-      mean: s.mean,
-      min: s.min,
-      max: s.max,
-      volatility: Math.round(s.volatility * 1000) / 1000,
-      trendPct: s.trendPct,
-      series: priceSeries(c).slice(-30),
-    };
-  });
+  const all = CROPS.map((c) => ({
+    slug: c.slug,
+    name: c.name,
+    hindiName: c.hindiName,
+    tamilName: c.tamilName,
+    color: c.color,
+    current: c.pricePerQtl,
+    mean: c.pricePerQtl,
+    min: c.pricePerQtl,
+    max: c.pricePerQtl,
+    volatility: c.volatility,
+    trendPct: 0,
+    series: [] as { date: string; price: number }[],
+  }));
 
-  return Response.json({ crops: all });
+  return Response.json({
+    crops: all,
+    note: "Static baseline reference prices — not live mandi data.",
+  });
 }

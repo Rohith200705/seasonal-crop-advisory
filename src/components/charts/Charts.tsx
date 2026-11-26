@@ -18,12 +18,15 @@ const AXIS = { stroke: "#5b6f5f", fontSize: 11 };
 const GRID = "#e7eee4";
 
 export function AccuracyChart({ data }: { data: { model: string; accuracy: number }[] }) {
+  const values = data.map((d) => d.accuracy);
+  const min = values.length ? Math.min(...values) : 0;
+  const domainMin = Math.max(0, Math.floor(min) - 2);
   return (
     <ResponsiveContainer width="100%" height={280}>
       <BarChart data={data} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}>
         <CartesianGrid stroke={GRID} vertical={false} />
         <XAxis dataKey="model" tick={AXIS} tickLine={false} axisLine={false} interval={0} angle={-18} textAnchor="end" height={54} />
-        <YAxis domain={[97, 100]} tick={AXIS} tickLine={false} axisLine={false} unit="%" />
+        <YAxis domain={[domainMin, 100]} tick={AXIS} tickLine={false} axisLine={false} unit="%" />
         <Tooltip
           formatter={(v) => [`${v}%`, "Accuracy"]}
           contentStyle={{ borderRadius: 10, border: "1px solid #e9efe6", fontSize: 12 }}

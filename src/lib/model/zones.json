@@ -1,0 +1,95 @@
+{
+  "k": 5,
+  "silhouette": 0.292,
+  "features": [
+    "temperature",
+    "humidity",
+    "ph",
+    "rainfall",
+    "N",
+    "P",
+    "K"
+  ],
+  "zones": [
+    {
+      "id": "zone-1",
+      "name": "Humid High-Rain Zone",
+      "description": "High rainfall and humidity \u2014 coastal & eastern belts.",
+      "color": "#0891b2",
+      "center": {
+        "temperature": 24.54,
+        "humidity": 85.11,
+        "ph": 6.52,
+        "rainfall": 168.08,
+        "N": 49.04,
+        "P": 32.86,
+        "K": 34.09
+      },
+      "size": 580
+    },
+    {
+      "id": "zone-2",
+      "name": "Warm Sub-Humid Zone",
+      "description": "Warm temperatures with moderate rainfall \u2014 productive plains.",
+      "color": "#65a30d",
+      "center": {
+        "temperature": 19.7,
+        "humidity": 23.32,
+        "ph": 6.42,
+        "rainfall": 98.5,
+        "N": 28.69,
+        "P": 67.51,
+        "K": 45.56
+      },
+      "size": 235
+    },
+    {
+      "id": "zone-3",
+      "name": "Temperate Balanced Zone",
+      "description": "Milder temperatures, balanced pH \u2014 highland & orchard country.",
+      "color": "#7c3aed",
+      "center": {
+        "temperature": 23.24,
+        "humidity": 87.11,
+        "ph": 5.98,
+        "rainfall": 91.13,
+        "N": 21.98,
+        "P": 133.39,
+        "K": 200.03
+      },
+      "size": 200
+    },
+    {
+      "id": "zone-4",
+      "name": "Semi-Arid Warm Zone",
+      "description": "Hotter and drier \u2014 rain-shadow and plateau tracts.",
+      "color": "#d97706",
+      "center": {
+        "temperature": 25.64,
+        "humidity": 78.66,
+        "ph": 6.44,
+        "rainfall": 75.77,
+        "N": 99.45,
+        "P": 41.51,
+        "K": 37.51
+      },
+      "size": 558
+    },
+    {
+      "id": "zone-5",
+      "name": "Cool Drier Zone",
+      "description": "Cooler, lower humidity \u2014 early-rabi and hill pockets.",
+      "color": "#f59e0b",
+      "center": {
+        "temperature": 29.57,
+        "humidity": 65.56,
+        "ph": 6.63,
+        "rainfall": 74.13,
+        "N": 25.74,
+        "P": 52.05,
+        "K": 23.15
+      },
+      "size": 627
+    }
+  ]
+}

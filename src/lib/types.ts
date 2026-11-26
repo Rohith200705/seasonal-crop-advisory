@@ -30,11 +30,6 @@ export type Crop = {
   description: string;
 };
 
-export type MandiPoint = {
-  date: string;
-  price: number;
-};
-
 export type AdvisoryInput = {
   season: Season;
   state?: string;

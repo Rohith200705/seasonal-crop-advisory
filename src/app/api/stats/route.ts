@@ -1,24 +1,6 @@
 import { connection } from "next/server";
 import { getFeedback, getLogs, getMode } from "@/lib/db";
-
-export const MODEL_ACCURACY = [
-  { model: "XGBoost", accuracy: 99.6 },
-  { model: "AdaBoost", accuracy: 99.55 },
-  { model: "Extra Trees", accuracy: 99.4 },
-  { model: "Random Forest", accuracy: 99.32 },
-  { model: "Decision Tree", accuracy: 98.64 },
-  { model: "Gradient Boost", accuracy: 98.18 },
-];
-
-export const RAINFALL_BY_CROP = [
-  { crop: "Rice", rainfall: 236 },
-  { crop: "Jute", rainfall: 175 },
-  { crop: "Coffee", rainfall: 158 },
-  { crop: "Maize", rainfall: 84 },
-  { crop: "Cotton", rainfall: 80 },
-  { crop: "Chickpea", rainfall: 80 },
-  { crop: "Lentil", rainfall: 46 },
-];
+import { MODEL_META } from "@/lib/model/inference";
 
 export async function GET() {
   await connection();
@@ -43,15 +25,27 @@ export async function GET() {
 
   return Response.json({
     mode,
-    modelAccuracy: MODEL_ACCURACY,
-    rainfallByCrop: RAINFALL_BY_CROP,
+    modelAccuracy: MODEL_META.modelAccuracy,
+    rainfallByCrop: MODEL_META.rainfallByCrop.slice(0, 7),
+    featureImportance: MODEL_META.featureImportance,
+    exportedModel: MODEL_META.exportedModel,
+    exportedAccuracy: MODEL_META.exportedAccuracy,
+    bestModel: MODEL_META.bestModel,
+    bestAccuracy: MODEL_META.bestAccuracy,
+    macroF1: MODEL_META.macroF1,
+    dataset: MODEL_META.dataset,
+    zonesMeta: {
+      k: MODEL_META.zones.k,
+      silhouette: MODEL_META.zones.silhouette,
+      zones: MODEL_META.zones.zones,
+    },
     totals: {
       queries: logs.length,
       feedback: feedback.length,
       avgRating,
-      crops: 22,
-      zones: 5,
-      models: 6,
+      crops: MODEL_META.dataset.classes.length,
+      zones: MODEL_META.zones.k,
+      models: MODEL_META.modelAccuracy.length,
     },
     zoneCounts: Object.entries(zoneCounts).map(([zone, count]) => ({ zone, count })),
     topCrops,
