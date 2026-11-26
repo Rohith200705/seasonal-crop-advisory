@@ -40,6 +40,16 @@ export type AdvisoryInput = {
   priceOverride?: number;
 };
 
+export type PriceQuote = {
+  price: number;
+  source: "live" | "baseline" | "override";
+  /** CV from live series when available */
+  volatility?: number;
+  asOf?: string;
+  commodity?: string;
+  state?: string;
+};
+
 export type RiskBreakdown = {
   rainfallAnomaly: number;
   heatExtreme: number;
@@ -58,6 +68,8 @@ export type Recommendation = {
   score: number;
   expectedYield: number;
   price: number;
+  priceSource: PriceQuote["source"];
+  priceAsOf?: string;
   revenue: number;
   cost: number;
   profit: number;
@@ -74,6 +86,8 @@ export type AdvisoryResult = {
   zoneDescription: string;
   recommendations: Recommendation[];
   generatedAt: string;
+  /** How many season crops got a live mandi quote */
+  livePriceCount?: number;
 };
 
 export type FeedbackDoc = {

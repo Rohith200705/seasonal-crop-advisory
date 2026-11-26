@@ -1,13 +1,36 @@
 import type { NextRequest } from "next/server";
 import { runAdvisory } from "@/lib/engine";
 import { getMode, saveLog } from "@/lib/db";
-import type { AdvisoryInput, Season } from "@/lib/types";
+import { CROPS } from "@/lib/data/crops";
+import { getMandiPricesWithTimeout } from "@/lib/mandi";
+import type { AdvisoryInput, PriceQuote, Season } from "@/lib/types";
 
 const SEASONS: Season[] = ["kharif", "rabi", "zaid"];
 
 function num(v: unknown, fallback: number): number {
   const n = typeof v === "string" ? parseFloat(v) : typeof v === "number" ? v : NaN;
   return Number.isFinite(n) ? n : fallback;
+}
+
+async function loadQuotes(season: Season): Promise<Record<string, PriceQuote>> {
+  const seasonCrops = CROPS.filter((c) => c.seasons.includes(season));
+  const snaps = await getMandiPricesWithTimeout(
+    seasonCrops.map((c) => ({ slug: c.slug, baseline: c.pricePerQtl })),
+    15000,
+    3
+  );
+  const quotes: Record<string, PriceQuote> = {};
+  for (const [slug, s] of Object.entries(snaps)) {
+    quotes[slug] = {
+      price: s.price,
+      source: s.source,
+      volatility: s.volatility,
+      asOf: s.asOf,
+      commodity: s.commodity,
+      state: s.state,
+    };
+  }
+  return quotes;
 }
 
 export async function POST(request: NextRequest) {
@@ -53,7 +76,8 @@ export async function POST(request: NextRequest) {
     return Response.json({ error: "Values out of plausible range" }, { status: 422 });
   }
 
-  const result = runAdvisory(input);
+  const quotes = await loadQuotes(season);
+  const result = runAdvisory(input, quotes);
   const top = result.recommendations[0];
 
   try {

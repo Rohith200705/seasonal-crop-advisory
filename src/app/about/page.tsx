@@ -18,7 +18,7 @@ const whatWorks = [
   ],
   [
     "Profit layer from the deck",
-    "Advisory score = expected yield × baseline ₹/qtl − input cost, re-weighted by a Season Risk Index (climate distance + market CV + model uncertainty).",
+    "Advisory score = expected yield × ₹/qtl − input cost, re-weighted by a Season Risk Index. Prices come from live mandi-api quotes when available, else static baseline.",
   ],
   [
     "K-Means zones",
@@ -31,11 +31,11 @@ const whatWorks = [
 ];
 
 const notBuilt = [
-  "Live Agmarknet/DMI mandi prices — profit uses static baseline ₹/qtl from crop profiles.",
-  "NASA POWER / IMD weather APIs — climate inputs come from the advisory form.",
+  "DMI weather APIs — climate inputs come from the advisory form, not live feeds.",
   "SHAP TreeExplainer at request time — feature importance is permutation-based, computed once at train time.",
   "Automatic retraining from farmer feedback — feedback is stored in Mongo but does not yet re-fit the model.",
   "SMS delivery — UI only.",
+  "Crops without mandi-api coverage (coffee, pulses, muskmelon, etc.) fall back to static baseline ₹/qtl — no fake series.",
 ];
 
 const references = [

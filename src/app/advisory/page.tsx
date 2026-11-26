@@ -434,7 +434,20 @@ export default function AdvisoryPage() {
                             {t("res_profit")}: <b className="text-brand-700">{inr(r.profit)}/ha</b>
                           </p>
                           <p>
-                            {t("res_price")}: {inr(r.price)}/qtl
+                            {t("res_price")}: {inr(r.price)}/qtl{" "}
+                            <span
+                              className={`pill ${
+                                r.priceSource === "live"
+                                  ? "bg-brand-100 text-brand-700"
+                                  : "bg-earth-100 text-earth-700"
+                              }`}
+                            >
+                              {r.priceSource === "live"
+                                ? `live${r.priceAsOf ? ` ${r.priceAsOf}` : ""}`
+                                : r.priceSource === "override"
+                                  ? "your price"
+                                  : "baseline"}
+                            </span>
                           </p>
                         </div>
                         <span className="text-brand-400">{open ? "▾" : "▸"}</span>

@@ -2,6 +2,7 @@ import type {
   AdvisoryInput,
   AdvisoryResult,
   Crop,
+  PriceQuote,
   Recommendation,
   RiskBreakdown,
   Season,
@@ -50,17 +51,30 @@ function scaleInput(input: AdvisoryInput): Record<string, number> {
   });
 }
 
+function resolveQuote(
+  crop: Crop,
+  input: AdvisoryInput,
+  quotes?: Record<string, PriceQuote>
+): PriceQuote {
+  if (input.priceOverride && input.priceOverride > 0) {
+    return { price: input.priceOverride, source: "override" };
+  }
+  const q = quotes?.[crop.slug];
+  if (q) return q;
+  return { price: crop.pricePerQtl, source: "baseline" };
+}
+
 function scoreCrop(
   crop: Crop,
   input: AdvisoryInput,
   areaHa: number,
   modelProb: number,
-  scaled: Record<string, number>
+  scaled: Record<string, number>,
+  quote: PriceQuote
 ) {
-  const price =
-    input.priceOverride && input.priceOverride > 0
-      ? input.priceOverride
-      : crop.pricePerQtl;
+  const price = quote.price;
+  const priceVolatility =
+    quote.volatility && quote.volatility > 0 ? quote.volatility : crop.volatility;
 
   // Expected yield scaled by model confidence (how well plot matches crop's training cluster)
   const confidence = Math.max(0.05, modelProb);
@@ -74,11 +88,10 @@ function scoreCrop(
   const features = MODEL_META.dataset.features_engineered;
   const dist = classDistance(crop.slug, scaled, features);
 
-  // Season Risk Index: climate distance from crop's learned profile + market assumption
-  // (crop.volatility is a static baseline assumption, not a synthetic price series)
+  // Season Risk Index: climate distance + market CV (live when available) + model uncertainty
   const rainfallAnomaly = Math.min(1, dist * 1.15);
   const heatExtreme = Math.min(1, dist * 0.7);
-  const marketRisk = Math.min(1, crop.volatility / 0.35);
+  const marketRisk = Math.min(1, priceVolatility / 0.35);
   const modelUncertainty = 1 - confidence;
 
   const risk: RiskBreakdown = {
@@ -124,8 +137,14 @@ function scoreCrop(
     );
   }
 
+  const priceLabel =
+    quote.source === "live"
+      ? `live mandi modal${quote.asOf ? ` (${quote.asOf})` : ""}${quote.state ? ` · ${quote.state}` : ""}`
+      : quote.source === "override"
+        ? "your price override"
+        : "static baseline ₹/qtl";
   reasons.push(
-    `Baseline economics: ${Math.round(expectedYield)} qtl/ha × ₹${price}/qtl − ₹${cost.toLocaleString("en-IN")} inputs ≈ ₹${Math.round(profit).toLocaleString("en-IN")}/ha (static reference price, not a live mandi quote).`
+    `Economics: ${Math.round(expectedYield)} qtl/ha × ₹${price}/qtl − ₹${cost.toLocaleString("en-IN")} inputs ≈ ₹${Math.round(profit).toLocaleString("en-IN")}/ha (${priceLabel}).`
   );
 
   if (risk.index >= 0.55) {
@@ -157,6 +176,8 @@ function scoreCrop(
     modelProb: confidence,
     expectedYield,
     price,
+    priceSource: quote.source,
+    priceAsOf: quote.asOf,
     revenue,
     cost,
     profit,
@@ -167,7 +188,10 @@ function scoreCrop(
   };
 }
 
-export function runAdvisory(input: AdvisoryInput): AdvisoryResult {
+export function runAdvisory(
+  input: AdvisoryInput,
+  quotes?: Record<string, PriceQuote>
+): AdvisoryResult {
   const areaHa = input.areaHa > 0 ? input.areaHa : 1;
   const raw = {
     N: input.soil.n,
@@ -184,7 +208,14 @@ export function runAdvisory(input: AdvisoryInput): AdvisoryResult {
 
   const seasonCrops = eligibleCrops(input.season);
   const scored = seasonCrops.map((c) =>
-    scoreCrop(c, input, areaHa, probBySlug.get(c.slug) ?? 0, scaled)
+    scoreCrop(
+      c,
+      input,
+      areaHa,
+      probBySlug.get(c.slug) ?? 0,
+      scaled,
+      resolveQuote(c, input, quotes)
+    )
   );
 
   // Step 1 (ML): season crops the forest supports.
@@ -213,6 +244,8 @@ export function runAdvisory(input: AdvisoryInput): AdvisoryResult {
       score: Math.max(1, Math.round((s.adjusted / maxAdjusted) * 100)),
       expectedYield: Math.round(s.expectedYield * 10) / 10,
       price: s.price,
+      priceSource: s.priceSource,
+      priceAsOf: s.priceAsOf,
       revenue: Math.round(s.revenue),
       cost: Math.round(s.cost),
       profit: Math.round(s.profit),
@@ -226,11 +259,15 @@ export function runAdvisory(input: AdvisoryInput): AdvisoryResult {
     .sort((a, b) => b.score - a.score);
 
   const zone = classifyZone(input);
+  const livePriceCount = Object.values(quotes ?? {}).filter(
+    (q) => q.source === "live"
+  ).length;
 
   return {
     zone: zone.name,
     zoneDescription: zone.description,
     recommendations,
     generatedAt: new Date().toISOString(),
+    livePriceCount,
   };
 }
